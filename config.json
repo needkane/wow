@@ -1,0 +1,15 @@
+{
+    "mysql":{
+        "user":"root",
+        "password":"zl123456",
+        "schema":"daxuanwo_w",
+        "endpoint":"localhost:3306" 
+    },
+    "origin_table":"item_template",
+    "target_table":"item_template_1",
+    "origin_key_column":"entry",
+    "target_key_column":"entry",
+    "origin_columns":"BuyPrice,SellPrice",
+    "target_columns":"BuyPrice,SellPrice",
+    "condition":"entry < 100"
+}
