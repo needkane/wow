@@ -8,13 +8,14 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
-	CONFIG_PATH      = "./config.json"
+	CONFIG_PATH      = "./config.txt"
 	SQL_RECORDS_PATH = "./sql_records.txt"
 )
 
@@ -106,12 +107,29 @@ func (input *Input) transfer() error {
 	defer file.Close()
 	for i := 0; i < len(originResult); i++ {
 		// Insert or Update
-		sqlStr = fmt.Sprintf("REPLACE INTO %s(%s) VALUES (%s)", input.TargetTable, input.TargetColumns, originResult[i])
+		sqlStr = fmt.Sprintf("UPDATE  %s SET ", input.TargetTable)
+		columnKeys := strings.Split(input.TargetColumns, ",")
+		values := strings.Split(originResult[i], ",")
+		var setStr string
+		for j := 0; j < len(columnKeys); j++ {
+			_, errA := strconv.Atoi(values[j])
+			if errA != nil {
+				values[j] = fmt.Sprintf("'%s'", values[j])
+			}
+			setStr += fmt.Sprintf("%s=%s,", columnKeys[j], values[j])
+		}
+		sqlStr = fmt.Sprintf("%s%s WHERE %s=%s", sqlStr, strings.TrimRight(setStr, ","), input.OriginKeyColumn, values[0])
 		file.WriteString(fmt.Sprintf("%s\n", sqlStr))
 		_, errE := db.Exec(sqlStr)
 		if errE != nil {
 			log.Println(errE)
-			file.WriteString(fmt.Sprintf("######%v,%s\n", errE, sqlStr))
+			sqlStr = fmt.Sprintf("INSERT INTO %s SET ", input.TargetTable)
+			sqlStr = fmt.Sprintf("%s%s", sqlStr, strings.TrimRight(setStr, ","))
+			file.WriteString(fmt.Sprintf("%s\n", sqlStr))
+			_, errE2 := db.Exec(sqlStr)
+			if errE2 != nil {
+				file.WriteString(fmt.Sprintf("######%v,%s\n", errE2, sqlStr))
+			}
 		}
 	}
 	return nil
